@@ -1,0 +1,45 @@
+plugins {
+    id 'java'
+    id 'application'
+    id "edu.sc.seis.launch4j" version "2.4.6"
+}
+
+repositories {
+    jcenter()
+}
+
+version = '1.0.0'
+sourceCompatibility = '1.8'
+
+dependencies {
+    implementation 'com.github.hbci4j:hbci4j-core:3.1.21'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
+}
+
+application {
+    mainClassName = 'dev.volkerw.hbci.bank.statement.export.App'
+}
+
+task fatJar(type: Jar, group: 'build') {
+    manifest {
+        attributes 'Main-Class': 'dev.volkerw.hbci.bank.statement.export.App'
+    }
+    archiveClassifier = 'fat'
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+launch4j {
+    mainClassName = 'dev.volkerw.hbci.bank.statement.export.App'
+    icon = "${projectDir}/icons/icon.ico"
+    headerType = 'console'
+    stayAlive = 'true'
+    copyConfigurable = project.tasks.fatJar.outputs.files
+    jar = "lib/${project.tasks.fatJar.archiveName}"
+}
+
+test {
+    useJUnitPlatform()
+}
