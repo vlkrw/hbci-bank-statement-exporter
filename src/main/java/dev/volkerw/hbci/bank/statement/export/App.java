@@ -49,7 +49,7 @@ public class App {
             displayString(turnover.toString());
         }
 
-        readLine("Beenden? &s", "[y]");
+        readLine("Beenden? %s", "[y]");
     }
 
     static class IO {
@@ -165,6 +165,12 @@ public class App {
             return executeJob(handle -> {
                 HBCIJob umsatzJob = handle.newJob("KUmsAll");
                 umsatzJob.setParam("my", account);
+                if (account.iban == null || account.iban.isEmpty()) {
+                    umsatzJob.setParam("my.iban", readLine("iban"));
+                }
+                if (account.bic == null || account.bic.isEmpty()) {
+                    umsatzJob.setParam("my.bic", readLine("bic"));
+                }
                 umsatzJob.addToQueue();
 
                 HBCIExecStatus status = handle.execute();
@@ -238,9 +244,7 @@ public class App {
                         retData.replace(0, retData.length(), code);
                         break;
                     case NEED_PT_TAN:
-
-                        String tan = IO.scanner().next();
-                        retData.replace(0, retData.length(), tan);
+                        retData.replace(0, retData.length(), readLine("tan"));
                         break;
                     case HAVE_ERROR:
                         // TODO
