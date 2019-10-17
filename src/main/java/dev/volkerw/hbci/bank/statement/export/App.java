@@ -11,11 +11,14 @@ import org.kapott.hbci.passport.AbstractHBCIPassport;
 import org.kapott.hbci.passport.HBCIPassport;
 import org.kapott.hbci.status.HBCIExecStatus;
 import org.kapott.hbci.structures.Konto;
+import org.kapott.hbci.structures.Saldo;
+import org.kapott.hbci.structures.Value;
 
-import java.io.Console;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 
@@ -48,8 +51,73 @@ public class App {
         for (GVRKUms.UmsLine turnover : turnovers) {
             displayString(turnover.toString());
         }
+        if (shouldSave()) {
+            String file = getFileName() + ".csv";
+            List<String> rows = new ArrayList<>();
+            rows.add(String.join(";", "id", "bdate", "valuta", "value.longValue", "value.curr") //
+                    + ";" + String.join(";", "saldo.timestamp", "saldo.value.longValue", "saldo.value.curr") //
+                    // TODO self + ";" + String.join(";", ) //
+                    // TODO other + ";" + String.join(";", ) //
+                    + ";" + String.join(";", "text", "usage") //
+                    + ";" + String.join(";", "mandateId", "primanota", "gvcode", "purposecode", "instref", "customerref", "endToEndId", "addkey", "additional")
+                    + ";" + String.join(";", "isCamt", "isSepa", "isStorno") //
+                    + ";" + String.join(";", "charge_value.longValue", "charge_value.curr") //
+                    + ";" + String.join(";", "orig_value.longValue", "orig_value.curr"));
+            for (GVRKUms.UmsLine t : turnovers) {
+                Value value = Optional.ofNullable(t.value).orElseGet(Value::new);
+                Value charge_value = Optional.ofNullable(t.charge_value).orElseGet(Value::new);
+                Value orig_value = Optional.ofNullable(t.orig_value).orElseGet(Value::new);
+                Saldo saldo = Optional.ofNullable(t.saldo).orElseGet(Saldo::new);
+                Value saldo_value = Optional.ofNullable(saldo.value).orElseGet(Value::new);
+
+                rows.add(String.join(";", toString(t.id, t.bdate, t.valuta, value.getLongValue(), value.getCurr())) //
+                        + ";" + String.join(";", toString(saldo.timestamp, saldo_value.getLongValue(), saldo_value.getCurr())) //
+                        // TODO self + ";" + String.join(";", toString(t.other, t)) //
+                        // TODO other + ";" + String.join(";", toString(t.other, t)) //
+                        + ";" + String.join(";", toString(t.text, String.join(" ", t.usage))) //
+                        + ";" + String.join(";", toString(t.mandateId, t.primanota, t.gvcode, t.purposecode, t.instref, t.customerref, t.endToEndId, t.addkey, t.additional)) //
+                        + ";" + String.join(";", toString(t.isCamt, t.isSepa, t.isStorno)) //
+                        + ";" + String.join(";", toString(charge_value.getLongValue(), charge_value.getCurr())) //
+                        + ";" + String.join(";", toString(orig_value.getLongValue(), orig_value.getCurr())));
+            }
+            try (PrintWriter writer = new PrintWriter(new FileWriter(new File(file)))) {
+                rows.forEach(row -> {
+                    writer.println(row);
+                });
+            } catch (IOException e) {
+                displayString("%s", e);
+            }
+        }
 
         readLine("Beenden? %s", "[y]");
+    }
+
+    private static String[] toString(Object... args) {
+        return Arrays.stream(args).map(it -> {
+            if (it instanceof Date) {
+                return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(Instant.ofEpochMilli(((Date) it).getTime())
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime());
+            }
+            return it;
+        }).map(s -> s == null ? "" : s.toString()).toArray(String[]::new);
+    }
+
+    private static String getFileName() {
+        String file = readLine("file");
+        if (file.isEmpty()) {
+            return getFileName();
+        }
+        return file;
+    }
+
+    private static boolean shouldSave() {
+        String save = readLine("save") + "";
+        boolean shouldSave = false;
+        if (save.equalsIgnoreCase("y") || save.equalsIgnoreCase("true") || save.equalsIgnoreCase("j") || save.isEmpty()) {
+            shouldSave = true;
+        }
+        return shouldSave;
     }
 
     static class IO {
