@@ -45,7 +45,8 @@ public class App {
         }
         int option = Integer.valueOf(IO.readLine()).intValue();
 
-        List<GVRKUms.UmsLine> turnovers = hbci.getTurnovers(accounts[option]);
+        Konto self = accounts[option];
+        List<GVRKUms.UmsLine> turnovers = hbci.getTurnovers(self);
 
         display("turnovers");
         for (GVRKUms.UmsLine turnover : turnovers) {
@@ -54,26 +55,27 @@ public class App {
         if (shouldSave()) {
             String file = getFileName() + ".csv";
             List<String> rows = new ArrayList<>();
+
             rows.add(String.join(";", "id", "bdate", "valuta", "value.longValue", "value.curr") //
                     + ";" + String.join(";", "saldo.timestamp", "saldo.value.longValue", "saldo.value.curr") //
-                    // TODO self + ";" + String.join(";", ) //
-                    // TODO other + ";" + String.join(";", ) //
-                    + ";" + String.join(";", "text", "usage") //
+                    + ";" + String.join(";", "other.acctype", "other.allowedGVs", "other.bic", "other.blz", "other.country", "other.curr", "other.customerid", "other.iban", "other.limit", "other.name", "other.name2", "other.number", "other.subnumber", "other.type") //
+                    + ";" + String.join(";","text", "usage") //
                     + ";" + String.join(";", "mandateId", "primanota", "gvcode", "purposecode", "instref", "customerref", "endToEndId", "addkey", "additional")
                     + ";" + String.join(";", "isCamt", "isSepa", "isStorno") //
                     + ";" + String.join(";", "charge_value.longValue", "charge_value.curr") //
                     + ";" + String.join(";", "orig_value.longValue", "orig_value.curr"));
+
             for (GVRKUms.UmsLine t : turnovers) {
                 Value value = Optional.ofNullable(t.value).orElseGet(Value::new);
                 Value charge_value = Optional.ofNullable(t.charge_value).orElseGet(Value::new);
                 Value orig_value = Optional.ofNullable(t.orig_value).orElseGet(Value::new);
                 Saldo saldo = Optional.ofNullable(t.saldo).orElseGet(Saldo::new);
                 Value saldo_value = Optional.ofNullable(saldo.value).orElseGet(Value::new);
+                Konto other = Optional.ofNullable(t.other).orElseGet(Konto::new);
 
                 rows.add(String.join(";", toString(t.id, t.bdate, t.valuta, value.getLongValue(), value.getCurr())) //
                         + ";" + String.join(";", toString(saldo.timestamp, saldo_value.getLongValue(), saldo_value.getCurr())) //
-                        // TODO self + ";" + String.join(";", toString(t.other, t)) //
-                        // TODO other + ";" + String.join(";", toString(t.other, t)) //
+                        + ";" + String.join(";", toString(other.acctype, other.allowedGVs, other.bic, other.blz, other.country, other.curr, other.customerid, other.iban, other.limit, other.name, other.name2, other.number, other.subnumber, other.type)) //
                         + ";" + String.join(";", toString(t.text, String.join(" ", t.usage))) //
                         + ";" + String.join(";", toString(t.mandateId, t.primanota, t.gvcode, t.purposecode, t.instref, t.customerref, t.endToEndId, t.addkey, t.additional)) //
                         + ";" + String.join(";", toString(t.isCamt, t.isSepa, t.isStorno)) //
@@ -293,8 +295,6 @@ public class App {
                 switch (reason) {
                     case NEED_PASSPHRASE_LOAD:
                     case NEED_PASSPHRASE_SAVE:
-                        retData.replace(0, retData.length(), pin);
-                        break;
                     case NEED_PT_PIN:
                         retData.replace(0, retData.length(), pin);
                         break;
@@ -307,8 +307,8 @@ public class App {
                         break;
                     case NEED_PT_SECMECH:
                         String options = retData.toString();
-                        // TODO
-                        String code = "942";
+                        display("tan-option");
+                        String code = readLine(options, new Object[]{});
                         retData.replace(0, retData.length(), code);
                         break;
                     case NEED_PT_TAN:
